@@ -3,7 +3,7 @@
     <section class="mb-8 py-20 text-white text-center relative">
       <div
         class="absolute inset-0 w-full h-full bg-contain introduction-bg"
-        style="background-image: url(img/header.png)"
+        style="background-image: url(/img/header.png)"
       ></div>
       <div class="container mx-auto">
         <div class="text-white main-header-content">
@@ -24,9 +24,11 @@
     </section>
     <section class="container mx-auto">
       <div class="bg-white rounded border border-gray-200 relative flex flex-col">
-        <div class="px-6 pt-6 pb-5 font-bold border-b border-gray-200">
+        <div
+          class="px-6 pt-6 pb-5 font-bold border-b border-gray-200"
+          v-icon.right="'headphones-alt'"
+        >
           <span class="card-title">Songs</span>
-          <i class="fa fa-headphones-alt float-right text-green-400 text-xl" />
         </div>
         <ol id="playlist">
           <li
@@ -49,10 +51,12 @@
                 :to="{ name: 'song', params: { id: song.id }, hash: '#comments' }"
                 v-slot="{ navigate }"
               >
-                <span class="comments" @click="navigate">
-                  <i class="fa fa-comments text-gray-600" />
-                  {{ song.commentCount }}
-                </span>
+                <span
+                  class="comments"
+                  @click="navigate"
+                  v-icon-secondary="{ icon: 'comments', color: 'black' }"
+                />
+                {{ song.commentCount }}
               </router-link>
             </div>
           </li>
@@ -64,9 +68,13 @@
 <script>
 import { mapActions, mapState } from "pinia";
 import { useSongsStore } from "@/stores/songs.js";
+import IconSecondary from "@/directives/icon-secondary";
 
 export default {
   name: "HomeView",
+  directives: {
+    "icon-secondary": IconSecondary,
+  },
   computed: {
     ...mapState(useSongsStore, ["songs"]),
   },

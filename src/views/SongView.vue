@@ -4,7 +4,7 @@
       <div
         class="absolute inset-0 w-full h-full box-border bg-contain music-bg"
         style="background-image: url(/img/song-header.png)"
-      ></div>
+      />
       <div class="container mx-auto flex items-center">
         <button
           @click.prevent="isPlaying ? stop() : play(song)"
