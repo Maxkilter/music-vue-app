@@ -1,6 +1,19 @@
 import { defineStore } from "pinia";
 import { auth, songsCollection } from "@/includes/firebase.js";
 import { DEFAULT_LIMIT } from "@/includes/constants.js";
+import {
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  orderBy,
+  startAfter,
+  limit as queryLimit,
+  where,
+  deleteDoc,
+  updateDoc,
+  addDoc,
+} from "firebase/firestore";
 
 export const useSongsStore = defineStore("songs", {
   state: () => ({
@@ -12,30 +25,29 @@ export const useSongsStore = defineStore("songs", {
 
   actions: {
     async fetchSongs(limit = DEFAULT_LIMIT) {
-      if (this.isPendingRequest) {
-        return;
-      }
-
+      if (this.isPendingRequest) return;
       this.isPendingRequest = true;
-
       try {
-        let querySnapshot;
-
+        let q;
         if (this.songs.length) {
-          const lastSong = await songsCollection.doc(this.songs[this.songs.length - 1].id).get();
-          querySnapshot = await songsCollection
-            .orderBy("modifiedName")
-            .startAfter(lastSong)
-            .limit(limit)
-            .get();
+          // Get the last document snapshot from the current songs array
+          const lastSongId = this.songs[this.songs.length - 1].id;
+          const lastSongDocRef = doc(songsCollection, lastSongId);
+          const lastSongDoc = await getDoc(lastSongDocRef);
+          q = query(
+            songsCollection,
+            orderBy("modifiedName"),
+            startAfter(lastSongDoc),
+            queryLimit(limit),
+          );
         } else {
-          querySnapshot = await songsCollection.orderBy("modifiedName").limit(limit).get();
+          q = query(songsCollection, orderBy("modifiedName"), queryLimit(limit));
         }
-
-        querySnapshot.forEach((doc) =>
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((docSnapshot) =>
           this.songs.push({
-            id: doc.id,
-            ...doc.data(),
+            id: docSnapshot.id,
+            ...docSnapshot.data(),
           }),
         );
       } catch (e) {
@@ -48,10 +60,15 @@ export const useSongsStore = defineStore("songs", {
 
     async fetchCurrentUserSongs() {
       try {
-        const querySnapshot = await songsCollection.where("uid", "==", auth.currentUser.uid).get();
-        this.currentUserSongs = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const q = query(
+          songsCollection,
+          where("uid", "==", auth.currentUser.uid),
+          orderBy("modifiedName"),
+        );
+        const querySnapshot = await getDocs(q);
+        this.currentUserSongs = querySnapshot.docs.map((docSnapshot) => ({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
         }));
       } catch (e) {
         console.error("Error fetching user's song list:", e);
@@ -61,15 +78,18 @@ export const useSongsStore = defineStore("songs", {
 
     async deleteSong(songId) {
       try {
-        await songsCollection.doc(songId).delete();
+        const songDocRef = doc(songsCollection, songId);
+        await deleteDoc(songDocRef);
       } catch (e) {
         console.error("Error deleting song:", e);
         throw e;
       }
     },
+
     async updateSong(song) {
       try {
-        await songsCollection.doc(song.id).update(song);
+        const songDocRef = doc(songsCollection, song.id);
+        await updateDoc(songDocRef, song);
         this.songs = this.songs.map((s) => (s.id === song.id ? song : s));
         this.updateIsDirty(false);
       } catch (e) {
@@ -77,9 +97,10 @@ export const useSongsStore = defineStore("songs", {
         throw e;
       }
     },
+
     async addSong(song) {
       try {
-        const docRef = await songsCollection.add(song);
+        const docRef = await addDoc(songsCollection, song);
         this.songs.push({
           id: docRef.id,
           ...song,
@@ -89,10 +110,12 @@ export const useSongsStore = defineStore("songs", {
         throw e;
       }
     },
+
     async fetchSong(songId) {
       try {
-        const docSnapshot = await songsCollection.doc(songId).get();
-        if (!docSnapshot.exists) {
+        const songDocRef = doc(songsCollection, songId);
+        const docSnapshot = await getDoc(songDocRef);
+        if (!docSnapshot.exists()) {
           throw new Error("notExists");
         }
         return { id: songId, ...docSnapshot.data() };
@@ -101,6 +124,7 @@ export const useSongsStore = defineStore("songs", {
         throw e;
       }
     },
+
     updateIsDirty(value) {
       this.isDirty = value;
     },

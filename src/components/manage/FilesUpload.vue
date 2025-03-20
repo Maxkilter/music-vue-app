@@ -6,7 +6,7 @@
         for="fileInput"
         class="float-right text-green-400 text-2xl cursor-pointer hover:text-green-500"
       >
-        <i class="fas fa-upload"></i>
+        <i class="fas fa-upload" />
       </label>
       <input id="fileInput" type="file" multiple class="hidden" @change="upload($event)" />
     </div>
@@ -45,9 +45,10 @@
 </template>
 
 <script>
-import { auth, storage } from "@/includes/firebase.js";
 import { mapActions } from "pinia";
 import { useSongsStore } from "@/stores/songs.js";
+import { auth, storage } from "@/includes/firebase.js";
+import { getDownloadURL, ref as storageRef, uploadBytesResumable } from "firebase/storage";
 
 export default {
   name: "FilesUpload",
@@ -62,14 +63,15 @@ export default {
 
     upload($event) {
       const files = $event.dataTransfer ? [...$event.dataTransfer.files] : [...$event.target.files];
+
       files.forEach((file) => {
         if (!file.type.match(/^audio\//)) {
           console.error("Invalid file type");
           return;
         }
-        const storageRef = storage.ref();
-        const songsRef = storageRef.child(`songs/${file.name}`);
-        const task = songsRef.put(file);
+
+        const songRef = storageRef(storage, `songs/${file.name}`);
+        const task = uploadBytesResumable(songRef, file);
 
         const uploadIndex =
           this.uploads.push({
@@ -84,8 +86,8 @@ export default {
         task.on(
           "state_changed",
           (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            this.uploads[uploadIndex].currentProgress = progress;
+            this.uploads[uploadIndex].currentProgress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           },
           (error) => {
             this.uploads[uploadIndex].variant = "bg-red-400";
@@ -97,13 +99,13 @@ export default {
             const song = {
               uid: auth.currentUser.uid,
               displayName: auth.currentUser.displayName,
-              originalName: task.snapshot.ref.name,
-              modifiedName: task.snapshot.ref.name,
+              originalName: file.name,
+              modifiedName: file.name,
               genre: "",
               commentCount: 0,
             };
 
-            song.downloadURL = await task.snapshot.ref.getDownloadURL();
+            song.downloadURL = await getDownloadURL(task.snapshot.ref);
 
             try {
               await this.addSong(song);
@@ -122,6 +124,7 @@ export default {
       });
       this.isDragOver = false;
     },
+
     cancelUploads() {
       this.uploads.forEach((upload) => {
         upload.task.cancel();

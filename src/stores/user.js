@@ -1,5 +1,12 @@
 import { defineStore } from "pinia";
 import { auth, usersCollection } from "@/includes/firebase";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  signOut,
+} from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 export const useUserStore = defineStore("user", {
   state: () => ({
@@ -7,31 +14,48 @@ export const useUserStore = defineStore("user", {
   }),
   actions: {
     async register(values) {
-      const { user } = await auth.createUserWithEmailAndPassword(values.email, values.password);
+      try {
+        const { user } = await createUserWithEmailAndPassword(auth, values.email, values.password);
 
-      if (user) {
-        await usersCollection.doc(user.uid).set({
-          name: values.name,
-          email: values.email,
-          age: values.age,
-          country: values.country,
-        });
+        if (user) {
+          await setDoc(doc(usersCollection, user.uid), {
+            name: values.name,
+            email: values.email,
+            age: values.age,
+            country: values.country,
+          });
 
-        await user.updateProfile({
-          displayName: values.name,
-        });
+          await updateProfile(user, {
+            displayName: values.name,
+          });
 
-        this.isUserLoggedIn = true;
-        return user;
+          this.isUserLoggedIn = true;
+          return user;
+        }
+      } catch (error) {
+        console.error("Error registering user:", error);
+        throw error;
       }
     },
+
     async authenticate({ email, password }) {
-      await auth.signInWithEmailAndPassword(email, password);
-      this.isUserLoggedIn = true;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        this.isUserLoggedIn = true;
+      } catch (error) {
+        console.error("Error signing in:", error);
+        throw error;
+      }
     },
+
     async signOut() {
-      await auth.signOut();
-      this.isUserLoggedIn = false;
+      try {
+        await signOut(auth);
+        this.isUserLoggedIn = false;
+      } catch (error) {
+        console.error("Error signing out:", error);
+        throw error;
+      }
     },
   },
 });

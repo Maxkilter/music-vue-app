@@ -13,10 +13,7 @@ export const usePlayerStore = defineStore("player", {
 
   getters: {
     isPlaying(state) {
-      if (state.sound.playing) {
-        return this.sound.playing();
-      }
-      return false;
+      return state.sound instanceof Howl && state.sound.playing();
     },
   },
 
@@ -25,7 +22,6 @@ export const usePlayerStore = defineStore("player", {
       if (this.sound instanceof Howl) {
         this.sound.unload();
       }
-
       this.currentSong = song;
       this.sound = new Howl({
         src: [song.downloadURL],
@@ -38,17 +34,20 @@ export const usePlayerStore = defineStore("player", {
     },
 
     stop() {
-      if (!this.sound.playing) {
-        return;
+      if (this.sound instanceof Howl && this.sound.playing()) {
+        this.sound.stop();
       }
-      return this.sound.stop();
     },
 
     progress() {
-      this.seek = formatTime(this.sound.seek());
-      this.duration = formatTime(this.sound.duration());
+      if (!(this.sound instanceof Howl)) return;
 
-      this.playerProgress = `${(this.sound.seek() / this.sound.duration()) * 100}%`;
+      const seekTime = this.sound.seek() || 0;
+      const duration = this.sound.duration() || 0;
+
+      this.seek = formatTime(seekTime);
+      this.duration = formatTime(duration);
+      this.playerProgress = duration ? `${(seekTime / duration) * 100}%` : "0%";
 
       if (this.sound.playing()) {
         requestAnimationFrame(this.progress);
@@ -56,9 +55,7 @@ export const usePlayerStore = defineStore("player", {
     },
 
     updateSeek(event) {
-      if (!this.sound.playing) {
-        return;
-      }
+      if (!(this.sound instanceof Howl && this.sound.playing())) return;
 
       const { x, width } = event.currentTarget.getBoundingClientRect();
       const percentage = (event.clientX - x) / width;
@@ -71,13 +68,13 @@ export const usePlayerStore = defineStore("player", {
     },
 
     togglePause() {
-      if (!this.sound.playing) {
-        return;
-      }
+      if (!(this.sound instanceof Howl)) return;
+
       if (this.sound.playing()) {
-        return this.sound.pause();
+        this.sound.pause();
+      } else {
+        this.sound.play();
       }
-      return this.sound.play();
     },
 
     clearPlayerState() {

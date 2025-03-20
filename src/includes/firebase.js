@@ -1,15 +1,15 @@
-import firebase from "firebase/app";
-import "firebase/auth";
-import "firebase/firestore";
-import "firebase/storage";
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, collection } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+import { firebaseConfig } from "../../config.js";
 
-const firebaseConfig = {};
+const app = initializeApp(firebaseConfig);
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 
-export const storage = firebase.storage();
-export const auth = firebase.auth();
-export const usersCollection = db.collection("users");
-export const songsCollection = db.collection("songs");
-export const commentsCollection = db.collection("comments");
+export const usersCollection = collection(db, "users");
+export const songsCollection = collection(db, "songs");
+export const commentsCollection = collection(db, "comments");

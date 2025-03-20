@@ -86,10 +86,11 @@
 import { mapActions, mapState } from "pinia";
 import { useSongsStore } from "@/stores/songs.js";
 import { ErrorMessage } from "vee-validate";
-import { commentsCollection, auth } from "@/includes/firebase.js";
+import { auth, commentsCollection } from "@/includes/firebase.js";
 import { useUserStore } from "@/stores/user.js";
 import { usePlayerStore } from "@/stores/player.js";
 import MusicPlayer from "@/components/MusicPlayer.vue";
+import { addDoc, query, where, getDocs } from "firebase/firestore";
 
 export default {
   name: "SongView",
@@ -127,7 +128,7 @@ export default {
       this.commentAlertMessage = "Please wait..., your comment is being submitted";
 
       try {
-        await commentsCollection.add({
+        await addDoc(commentsCollection, {
           content: values.comment,
           songId: this.$route.params.id,
           userId: auth.currentUser.uid,
@@ -137,8 +138,9 @@ export default {
         this.commentAlertVariant = "bg-green-500";
         this.commentAlertMessage = "Your comment has been submitted";
 
-        this.song.commentCount += 1;
+        this.song.commentCount = (this.song.commentCount || 0) + 1;
         await this.updateSong(this.song);
+
         await this.getComments();
         resetForm();
       } catch (e) {
@@ -149,16 +151,18 @@ export default {
         setTimeout(() => (this.commentInSubmission = false), 1000);
       }
     },
+
     async getComments() {
       if (!this.song) {
         return;
       }
-
       try {
-        const querySnapshot = await commentsCollection
-          .where("songId", "==", this.$route.params.id)
-          .get();
-        this.comments = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const q = query(commentsCollection, where("songId", "==", this.$route.params.id));
+        const querySnapshot = await getDocs(q);
+        this.comments = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
       } catch (e) {
         console.error(e.message);
         throw e;
