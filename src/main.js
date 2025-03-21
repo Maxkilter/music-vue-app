@@ -9,6 +9,9 @@ import router from "./router";
 import { VeeValidatePlugin } from "@/includes/validation.js";
 import { auth } from "@/includes/firebase.js";
 import Icon from "@/directives/icon";
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({ immediate: true });
 
 let app;
 
