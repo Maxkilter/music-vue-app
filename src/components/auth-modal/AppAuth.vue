@@ -60,12 +60,14 @@
 import { mapState, mapWritableState } from "pinia";
 import { useModalStore } from "@/stores/auth-modal.js";
 import { authModalTabs } from "@/includes/constants.js";
-import AppLogin from "./AppLogin.vue";
-import AppRegister from "./AppRegister.vue";
+import { defineAsyncComponent } from "vue";
 
 export default {
   name: "AppAuth",
-  components: { AppLogin, AppRegister },
+  components: {
+    AppLogin: defineAsyncComponent(() => import("./AppLogin.vue")),
+    AppRegister: defineAsyncComponent(() => import("./AppRegister.vue")),
+  },
   data() {
     return {
       authModalTabs,
