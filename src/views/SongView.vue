@@ -177,17 +177,22 @@ export default {
       this.$router.push({ query: { sort: newVal } });
     },
   },
-  async created() {
-    try {
-      this.song = await this.fetchSong(this.$route.params.id);
-      const sort = this.$route.query.sort;
-      this.sort = sort === "byOldest" || sort === "byLatest" ? sort : "byLatest";
-      await this.getComments();
-    } catch (e) {
-      if (e.message === "notExists") {
-        return this.$router.push({ name: "home" });
+  async beforeRouteEnter(to, from, next) {
+    next(async (vm) => {
+      try {
+        const song = await vm.fetchSong(to.params.id);
+        vm.song = song;
+        const sort = vm.$route.query.sort;
+        vm.sort = sort === "byOldest" || sort === "byLatest" ? sort : "byLatest";
+        await vm.getComments();
+      } catch (e) {
+        if (e.message === "notExists") {
+          vm.$router.push({ name: "home" });
+        } else {
+          console.error(e);
+        }
       }
-    }
+    });
   },
   beforeUnmount() {
     this.clearPlayerState();
