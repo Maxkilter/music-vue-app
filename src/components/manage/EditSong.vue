@@ -68,13 +68,13 @@ export default {
   methods: {
     ...mapActions(useSongsStore, ["updateSong", "updateIsDirty", "fetchCurrentUserSongs"]),
 
-    onEditSong(values) {
+    async onEditSong(values) {
       this.inSubmission = true;
       this.showAlert = true;
 
       try {
-        this.updateSong(values);
-        this.fetchCurrentUserSongs();
+        await this.updateSong(values);
+        await this.fetchCurrentUserSongs();
         this.inSubmission = false;
         this.alertVariant = "bg-green-500";
         this.alertMessage = "Successfully updated song information.";

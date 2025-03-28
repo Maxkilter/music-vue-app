@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:unit": "vitest",
+    "test:unit": "vitest --ui",
     "test:e2e": "playwright test",
     "lint": "eslint . --fix",
     "format": "prettier --write src/"
@@ -28,7 +28,8 @@
     "@playwright/test": "^1.51.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",
-    "@vitest/eslint-plugin": "^1.1.36",
+    "@vitest/eslint-plugin": "^1.1.38",
+    "@vitest/ui": "^3.0.9",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.21",
